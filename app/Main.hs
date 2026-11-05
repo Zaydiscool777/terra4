@@ -3,7 +3,7 @@ module Main (main) where
 import Raylib.Core as R (setTargetFPS, initWindow, closeWindow)
 
 import Control.Monad.State (evalStateT)
-import Lib (init', tick, tilClose)
+import Elm (init', tick, tilClose)
 
 main :: IO ()
 main = do

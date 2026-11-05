@@ -39,6 +39,7 @@ ghc-options:
 - -Wredundant-constraints
 
 - -Wno-unused-top-binds
+- -fwrite-ide-info
 
 library:
   source-dirs: src
