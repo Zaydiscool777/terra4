@@ -1,28 +1,25 @@
-{-# LANGUAGE LexicalNegation, MultiWayIf, BlockArguments #-}
+{-# LANGUAGE LexicalNegation, MultiWayIf, BlockArguments, ScopedTypeVariables, ParallelListComp #-}
 module Lib where
 
-import Data'
-import Utils
+import Data' ( playerRad, tiles, tiles', tilesLen )
 import Types
 
-import Raylib.Core as R
-import Raylib.Core.Text as Text
 import Raylib.Core.Textures as Texture
+import Raylib.Util.Colors
+import Raylib.Util.Lenses
+import Raylib.Core.Shapes
+import Raylib.Core.Text
 
 import Raylib.Types.Core
 import Raylib.Types.Core.Camera
 import Raylib.Types.Core.Textures as Textures
-
-import Raylib.Util.Colors
-import Raylib.Util.Lenses
+import Raylib.Types.Core.Text
 
 import Linear
 import Control.Monad
-import Control.Monad.State
 import Control.Lens
 import qualified Data.Map as M
 import Data.Foldable
-import Data.Maybe
 
 -- io
 
@@ -38,6 +35,25 @@ drawtiles t i =
 
 drawplayer :: Vector2 -> Texture -> IO ()
 drawplayer v i = drawTextureV i (v - pure playerRad) white
+
+drawgui :: (Float, Float) -> IO ()
+drawgui (w, h) = void do
+  let x = take (length tiles') [(i, j, k) | i :: Float <- [0..2], j :: Float <- [0..] | k :: Int <- [0..]]
+  let (mw, mh) = let c f = maximum (map f x) + 1 in (c (^._1), c (^._2))
+  forM x \(aw, ah, a) -> do
+    drawRectangleRec (
+      Rectangle {
+        rectangle'x = w * aw / mw,
+        rectangle'y = h * ah / mh,
+        rectangle'width = w / mw,
+        rectangle'height = h / mh
+      }) white
+    drawText
+      (show $ succ a)
+      (round $ (w * aw / mw) + (w / (2 * mw)))
+      (round $ (h * ah / mh) + (h / (2 * mh)))
+      12 black
+    return ()
 
 -- pure
 

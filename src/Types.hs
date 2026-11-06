@@ -1,10 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Types where
 
-import Control.Lens
 import Raylib.Types.Core
-import Data.Map
 import Raylib.Types.Core.Textures
+
+import Control.Lens
+import Data.Map
 
 data Player = Player {
   _pos :: Vector2,

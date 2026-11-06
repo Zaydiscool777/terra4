@@ -8,13 +8,14 @@ import Data'
 
 import Raylib.Core
 import Raylib.Util.Colors
+
 import Raylib.Types.Core
 
+import Linear
+import Control.Lens
+import Data.Maybe
 import Control.Monad.State
 import qualified Data.Map as M
-import Control.Lens
-import Linear
-import Data.Maybe
 
 init' :: IO Model
 init' = do
@@ -52,7 +53,8 @@ sub i = do
   return $ upd i2 AEnd
 
 upd :: Model -> Action -> Model
-upd m AStart = m & _Level.player.uvel .~ pure 0
+upd m AStart = m & (_Level.player.uvel .~ pure 0)
+upd _ (AKey KeyQ) = Select
 upd m (AKey KeyUp) = m
   & _Level.player.air .~ True
   & _Level.player.uvel %~ (+ V2 0 if fromMaybe False $ m^?_Level.player.air then 0 else -22)
@@ -72,15 +74,17 @@ upd m _ = m
 view' :: Model -> IO ()
 view' m = do
   beginDrawing
-  clearBackground rayWhite
   w <- getScreenWidth
   h <- getScreenHeight
   case m of
     Level (LevelData {..}) -> do
+      clearBackground rayWhite
       beginMode2D (center (_player^.pos) w h)
       drawtiles (tiles _lvlnum) (_image^._2)
       drawplayer (_player^.pos) (_image^._1)
     Select -> do
+      clearBackground lightGray
+      drawgui (fromIntegral w, fromIntegral h)
       return () -- to do
   endMode2D
   endDrawing -- presents frame to user

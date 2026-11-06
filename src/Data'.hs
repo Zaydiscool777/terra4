@@ -6,24 +6,40 @@ tiles :: Int -> [(Char, Rectangle)]
 tiles l = (\(id', col, row) -> (id', Rectangle (col * k) (row * k) k k)) <$> tiles' !! l
   where
     k = tilesLen
-    makeTiles :: [String] -> [(Char, Float, Float)]
-    makeTiles = concat . zipWith (\i r -> zipWith (\j x -> (x, j, i)) [0..] r) [0..]
-    tiles' = map (makeTiles . lines)
-      [
-        "       1      \n\
-        \1 11111111111 \n\
-        \1             \n\
-        \111111   11111\n\
-        \          2   \n\
-        \   111111111  ",
-        
-        "              \n\
-        \1 11 11   111 \n\
-        \    2  1      \n\
-        \11  11  11   1\n\
-        \              \n\
-        \   11  1 11   "
-      ]
+
+tiles' :: [[(Char, Float, Float)]]
+tiles' = map (
+      concat . zipWith (\i r -> zipWith (\j x -> (x, j, i)) [0..] r) [0..]
+    . lines)
+  [
+    "       1      \n\
+    \1 11111111111 \n\
+    \1             \n\
+    \111111   11111\n\
+    \          2   \n\
+    \   111111111  ",
+    
+    "       1      \n\
+    \1 11111111111 \n\
+    \1         2   \n\
+    \111111   11111\n\
+    \              \n\
+    \   111111111  ",
+
+    "       1      \n\
+    \1 11111111111 \n\
+    \1             \n\
+    \111111   11111\n\
+    \          2   \n\
+    \   111111111  ",
+
+    "              \n\
+    \1 11 11   111 \n\
+    \    2  1      \n\
+    \11  11  11   1\n\
+    \              \n\
+    \   11  1 11   "
+  ]
 
 playerRad, tilesLen :: Num a => a
 playerRad = 15
