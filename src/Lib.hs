@@ -1,25 +1,25 @@
-{-# LANGUAGE LexicalNegation, MultiWayIf, BlockArguments, ScopedTypeVariables, ParallelListComp #-}
+{-# LANGUAGE LexicalNegation, MultiWayIf, BlockArguments, ScopedTypeVariables, RecordWildCards #-}
 module Lib where
 
-import Data' ( playerRad, tiles, tiles', tilesLen )
+import Data_ ( playerRad, tiles, tiles', tilesLen )
 import Types
+import Utils
 
 import Raylib.Core.Textures as Texture
 import Raylib.Util.Colors
 import Raylib.Util.Lenses
-import Raylib.Core.Shapes
-import Raylib.Core.Text
+import Raylib.Util.GUI
 
 import Raylib.Types.Core
 import Raylib.Types.Core.Camera
 import Raylib.Types.Core.Textures as Textures
-import Raylib.Types.Core.Text
 
 import Linear
 import Control.Monad
 import Control.Lens
 import qualified Data.Map as M
 import Data.Foldable
+import Data.Maybe
 
 -- io
 
@@ -36,24 +36,22 @@ drawtiles t i =
 drawplayer :: Vector2 -> Texture -> IO ()
 drawplayer v i = drawTextureV i (v - pure playerRad) white
 
-drawgui :: (Float, Float) -> IO ()
-drawgui (w, h) = void do
-  let x = take (length tiles') [(i, j, k) | i :: Float <- [0..2], j :: Float <- [0..] | k :: Int <- [0..]]
-  let (mw, mh) = let c f = maximum (map f x) + 1 in (c (^._1), c (^._2))
-  forM x \(aw, ah, a) -> do
-    drawRectangleRec (
+drawgui :: (Float, Float) -> IO (Maybe Int)
+drawgui (w, h) = do
+  let m = length tiles'
+  let ah = h / fromIntegral m
+  clicks <- forM [0..m - 1] \x -> do
+    let xf = fromIntegral x
+    clicked <- guiButton
       Rectangle {
-        rectangle'x = w * aw / mw,
-        rectangle'y = h * ah / mh,
-        rectangle'width = w / mw,
-        rectangle'height = h / mh
-      }) white
-    drawText
-      (show $ succ a)
-      (round $ (w * aw / mw) + (w / (2 * mw)))
-      (round $ (h * ah / mh) + (h / (2 * mh)))
-      12 black
-    return ()
+        rectangle'x = 0,
+        rectangle'y = xf * ah,
+        rectangle'width = w,
+        rectangle'height = ah
+      }
+      (Just (show (succ x)))
+    return if clicked then Just x else Nothing
+  return $ listToMaybe $ catMaybes clicks
 
 -- pure
 
@@ -88,12 +86,19 @@ block (Rectangle rx ry rw rh) t@(V2 px py, V2 tx ty, _) = (blockv . blockh) t
       | otherwise -> id
 
 inputted :: Model -> Model
-inputted = _Level %~ f
-  where f x = ((player %~ move (x^.lvlnum)) . (lvlnum %~ chlvl (x^.player.pos))) x
+inputted m@(Select _) = m
+inputted m@(Level (LevelData {..}) p) =
+  case chlvl (_player^.pos) _lvlnum of
+    Just x -> m & _LevelData.player %~ move _lvlnum & _LevelData.lvlnum .~ x
+    Nothing -> Select p
+  --where f x = ((lvlnum %~ chlvl (x^.player.pos))) x
 
-chlvl :: Vector2 -> Int -> Int
-chlvl p l = if any ((== '2') . fst) at_blocks then succ l else l
+chlvl :: Vector2 -> Int -> Maybe Int
+chlvl p l = if
+  | not $ any ((== '2') . fst) at_blocks -> Just l
+  | succ l > length tiles' -> Nothing
+  | otherwise -> Just (succ l)
   where
-    at_blocks = [b | b@(_, x) <- tiles l, V2 (x^._rectangle'x) (x^._rectangle'y) == rounded p]
+    at_blocks = [b | b@(_, x) <- tiles l, fst (rectTo2V x) == rounded p]
 rounded :: Vector2 -> Vector2
 rounded p = (fromIntegral :: Int -> Float) . (* tilesLen) . (`div` tilesLen) . floor <$> p

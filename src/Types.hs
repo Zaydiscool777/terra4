@@ -15,16 +15,21 @@ data Player = Player {
 } deriving Show
 makeLenses ''Player
 
+data Persistent = Persistent {
+  _ptex :: Texture,
+  _tiletex :: Map Char Texture
+}
+makeLenses ''Persistent
+
 data LevelData = LevelData {
   _player :: Player,
-  _image :: (Texture, Map Char Texture),
   _lvlnum :: Int
 }
 makeLenses ''LevelData
 
 data Model =
-  Level LevelData
-  | Select
+  Level LevelData Persistent
+  | Select Persistent
 makeLenses ''Model
 makePrisms ''Model
 

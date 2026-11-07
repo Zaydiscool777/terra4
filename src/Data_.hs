@@ -1,4 +1,4 @@
-module Data' where
+module Data_ where
 
 import Raylib.Types.Core
 
@@ -26,11 +26,11 @@ tiles' = map (
     \              \n\
     \   111111111  ",
 
-    "       1      \n\
+    "       1  2   \n\
     \1 11111111111 \n\
     \1             \n\
     \111111   11111\n\
-    \          2   \n\
+    \              \n\
     \   111111111  ",
 
     "              \n\
