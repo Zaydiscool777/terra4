@@ -4,7 +4,7 @@
 
 module Elm (init', tick, tilClose) where
 
-import Control.Lens (Field1 (_1), (%~), (&), (.~), (^.), (^?))
+import Control.Lens ((%~), (&), (.~), (^.), (^?))
 import Control.Monad.State
   ( MonadIO (liftIO),
     MonadState (get, put),
@@ -12,14 +12,14 @@ import Control.Monad.State
   )
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import Data_ (playerRad, tiles, tilesLen)
+import Data_ (playerRad, tiles, tilesLen, restart)
 import Lib
   ( center,
     drawgui,
     drawplayer,
     drawtiles,
     inputted,
-    squaretexture,
+    drawmain,
   )
 import Linear (V2 (V2))
 import Raylib.Core
@@ -32,42 +32,25 @@ import Raylib.Core
     getScreenWidth,
   )
 import Raylib.Types.Core
-  ( KeyboardKey (KeyDown, KeyLeft, KeyQ, KeyR, KeyRight, KeyUp),
+  ( KeyboardKey (KeyDown, KeyLeft, KeyQ, KeyR, KeyRight, KeyUp, KeyX),
   )
-import Raylib.Util.Colors (lightGray, rayWhite)
+import Raylib.Util.Colors (lightGray, rayWhite, blue)
 import Types
-  ( Action (..),
-    LevelData (LevelData, _lvlnum, _player),
-    Model (..),
-    Persistent (Persistent, _ptex, _tiletex),
-    Player (Player, _air, _pos, _tvel, _uvel),
-    air,
-    player,
-    pos,
-    ptex,
-    tiletex,
-    uvel,
-    _Level,
-  )
-import Utils (getKeysDown, tilClose)
+
+import Utils (getKeysDown, tilClose, _LevelData, persistent)
+import Control.Monad ((>=>))
+import Raylib.Core.Textures
+    ( imageResize, loadImage, loadTextureFromImage )
+-- import Raylib.Types (Texture)
 
 init' :: IO Model
 init' = do
+  let squaretexture l = loadImage >=> (\p -> imageResize p l l) >=> loadTextureFromImage
   img0 <- squaretexture (playerRad * 2) "./assets/ball.png"
   img1 <- squaretexture tilesLen "./assets/wall.png"
   img2 <- squaretexture tilesLen "./assets/portal.png"
   return $
-    Level
-      LevelData
-        { _player =
-            Player
-              { _pos = pure 200,
-                _uvel = pure 0,
-                _tvel = pure 0,
-                _air = True
-              },
-          _lvlnum = 0
-        }
+    Main
       Persistent
         { _ptex = img0,
           _tiletex =
@@ -78,7 +61,7 @@ init' = do
         }
 
 tick :: StateT Model IO ()
-tick = get >>= liftIO . sub >>= liftIO . view' >>= put
+tick = get >>= liftIO . (sub >=> view') >>= put
 
 sub :: Model -> IO Model
 sub i = do
@@ -88,24 +71,17 @@ sub i = do
   return $ upd i2 AEnd
 
 upd :: Model -> Action -> Model
-upd m AStart = m & (_Level . _1 . player . uvel .~ pure 0)
+upd m AStart = m & (_LevelData . player . uvel .~ pure 0)
 upd (Level _ p) (AKey KeyQ) = Select p
 upd m (AKey KeyUp) =
   m
-    & _Level . _1 . player . air .~ True
-    & _Level . _1 . player . uvel %~ (+ V2 0 if fromMaybe False $ m ^? _Level . _1 . player . air then 0 else -22)
-upd m (AKey KeyDown) = m & _Level . _1 . player . uvel %~ (+ V2 0 10)
-upd m (AKey KeyLeft) = m & _Level . _1 . player . uvel %~ (- V2 10 0)
-upd m (AKey KeyRight) = m & _Level . _1 . player . uvel %~ (+ V2 10 0)
-upd m (AKey KeyR) =
-  m
-    & _Level . _1 . player
-      .~ Player
-        { _pos = pure 201,
-          _uvel = pure 0,
-          _tvel = pure 0,
-          _air = True
-        }
+    & _LevelData . player . air .~ True
+    & _LevelData . player . uvel %~ (+ V2 0 if fromMaybe False $ m ^? _LevelData . player . air then 0 else -22)
+upd m (AKey KeyDown) = m & _LevelData . player . uvel %~ (+ V2 0 10)
+upd m (AKey KeyLeft) = m & _LevelData . player . uvel %~ (- V2 10 0)
+upd m (AKey KeyRight) = m & _LevelData . player . uvel %~ (+ V2 10 0)
+upd m (AKey KeyR) = m & _LevelData . player .~ _player restart
+upd m (AKey KeyX) = Main (m ^. persistent)
 upd m AEnd = inputted m
 upd m _ = m
 
@@ -119,7 +95,7 @@ view' m = do
       clearBackground rayWhite
       beginMode2D (center (_player ^. pos) w h)
       case tiles _lvlnum of
-        Nothing -> return $ Select p
+        Nothing -> return $ Main p
         Just x -> do
           drawtiles x (p ^. tiletex)
           drawplayer (_player ^. pos) (p ^. ptex)
@@ -128,20 +104,12 @@ view' m = do
       clearBackground lightGray
       x <- drawgui (fromIntegral w, fromIntegral h)
       return case x of
-        Just x' ->
-          Level
-            LevelData
-              { _player =
-                  Player
-                    { _pos = pure 200,
-                      _uvel = pure 0,
-                      _tvel = pure 0,
-                      _air = True
-                    },
-                _lvlnum = x'
-              }
-            p
+        Just x' -> Level (restart {_lvlnum = x'}) p
         Nothing -> m
+    Main p -> do
+      clearBackground blue
+      x <- drawmain (w, h)
+      return if x then Level restart p else m
   endMode2D
   endDrawing -- presents frame to user
   return m'

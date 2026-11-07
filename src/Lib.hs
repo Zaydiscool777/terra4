@@ -15,22 +15,17 @@ import Control.Lens
     (.~),
     (^.),
   )
-import Control.Monad (forM, (>=>))
+import Control.Monad (forM)
 import Data.Foldable (for_)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, listToMaybe, fromMaybe)
 import Data_ (playerRad, tiles, tiles', tilesLen)
 import Linear (R1 (_x), R2 (_y), V2 (V2))
-import Raylib.Core.Textures as Texture
-  ( drawTextureV,
-    imageResize,
-    loadImage,
-    loadTextureFromImage,
-  )
+import Raylib.Core.Textures as Texture ( drawTextureV )
 import Raylib.Types.Core (Rectangle (..), Vector2)
 import Raylib.Types.Core.Camera (Camera2D (Camera2D))
 import Raylib.Types.Core.Textures as Textures (Texture)
-import Raylib.Util.Colors (white)
+import Raylib.Util.Colors (white, black)
 import Raylib.Util.GUI (guiButton)
 import Raylib.Util.Lenses (_rectangle'x, _rectangle'y)
 import Types
@@ -42,11 +37,9 @@ import Types
     pos,
   )
 import Utils (rectTo2V, _LevelData)
+import Raylib.Core.Text (drawText, measureText)
 
 -- io
-
-squaretexture :: Int -> String -> IO Texture
-squaretexture l = loadImage >=> (\p -> imageResize p l l) >=> loadTextureFromImage
 
 -- thanks to https://discord.com/users/1276891525451743295
 drawtiles :: [(Char, Rectangle)] -> M.Map Char Texture -> IO ()
@@ -81,6 +74,17 @@ drawgui (w, h) = do
         (Just (show (succ x)))
     return if clicked then Just x else Nothing
   return $ listToMaybe $ catMaybes clicks
+
+drawmain :: (Int, Int) -> IO Bool
+drawmain (w, h) = do
+  tw <- measureText "game" 240
+  drawText "game" ((w `div` 2) - (tw `div` 2)) (h `div` 6) 240 black
+  guiButton Rectangle {
+    rectangle'x = 0,
+    rectangle'y = fromIntegral (h `div` 2),
+    rectangle'width = fromIntegral w,
+    rectangle'height = fromIntegral (h `div` 2)
+  } (Just "start")
 
 -- pure
 
@@ -117,11 +121,11 @@ block (Rectangle rx ry rw rh) t@(V2 px py, V2 tx ty, _) = (blockv . blockh) t
         | otherwise -> id
 
 inputted :: Model -> Model
-inputted m@(Select _) = m
 inputted m@(Level (LevelData {..}) p) =
   case chlvl (_player ^. pos) _lvlnum of
-    Just x -> m & _LevelData . player %~ move _lvlnum & _LevelData . lvlnum .~ x
-    Nothing -> Select p
+    Just x -> m & _LevelData %~ (player %~ move _lvlnum) . (lvlnum .~ x)
+    Nothing -> Main p
+inputted m = m
 
 -- where f x = ((lvlnum %~ chlvl (x^.player.pos))) x
 

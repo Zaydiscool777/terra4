@@ -41,12 +41,14 @@ untilM' :: (Monad m) => (a -> Bool) -> m a -> m ([a], a)
 untilM' p m = loopUntil p (lift m) ()
 
 persistent :: Lens' Model Persistent
-persistent = lens get' set''
+persistent = lens g s
   where
-    get' (Level _ p) = p
-    get' (Select p) = p
-    set'' (Level ld _) p = Level ld p
-    set'' (Select _) p = Select p
+    g (Level _ p) = p
+    g (Select p) = p
+    g (Main p) = p
+    s (Level ld _) p = Level ld p
+    s (Select _) p = Select p
+    s (Main _) p = Main p
 
 _LevelData :: Traversal' Model LevelData
 _LevelData = _Level . _1

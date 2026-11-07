@@ -34,6 +34,7 @@ makeLenses ''LevelData
 data Model
   = Level LevelData Persistent
   | Select Persistent
+  | Main Persistent
 
 makeLenses ''Model
 makePrisms ''Model
