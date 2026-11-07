@@ -1,9 +1,8 @@
 module Main (main) where
 
-import Raylib.Core as R (setTargetFPS, initWindow, closeWindow)
-
 import Control.Monad.State (evalStateT)
 import Elm (init', tick, tilClose)
+import Raylib.Core as R (closeWindow, initWindow, setTargetFPS)
 
 main :: IO ()
 main = do

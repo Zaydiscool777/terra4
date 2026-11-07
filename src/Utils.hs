@@ -1,18 +1,26 @@
 module Utils where
 
-import Types
-import Data_
-
-import Raylib.Types.Core
+import Control.Lens (Field1 (_1), Lens', Traversal', lens)
+import Control.Monad (filterM, void)
 import Control.Monad.State
-import Raylib.Core
-import Control.Monad
+  ( MonadIO (liftIO),
+    MonadState (get),
+    MonadTrans (lift),
+    StateT (runStateT),
+  )
 import Data.Bifunctor (first)
-import Linear
-import Control.Lens
+import Data_ (keysint)
+import Linear (V2 (V2))
+import Raylib.Core (isKeyDown, windowShouldClose)
+import Raylib.Types.Core
+  ( KeyboardKey,
+    Rectangle (Rectangle),
+    Vector2,
+  )
+import Types (LevelData, Model (..), Persistent, _Level)
 
 -- untilM :: Monad m => (a -> Bool) -> m a -> m a from: utility-ht
-loopUntil :: Monad m => (a -> Bool) -> StateT s m a -> s -> m ([a], a)
+loopUntil :: (Monad m) => (a -> Bool) -> StateT s m a -> s -> m ([a], a)
 loopUntil p m s = do
   (x, s') <- runStateT m s
   if p x then return ([], x) else first (x :) <$> loopUntil p m s'
@@ -26,22 +34,22 @@ loopUntil p m s = do
 --     splitter l c n = l `c` splitter (drop i l) c n
 
 -- also :: (a -> Bool) -> (a -> State s a) -> a -> State s [a]
-untilM :: Monad m => (a -> Bool) -> (a -> m a) -> a -> m ([a], a)
+untilM :: (Monad m) => (a -> Bool) -> (a -> m a) -> a -> m ([a], a)
 untilM p m = loopUntil p (get >>= lift . m)
 
-untilM' :: Monad m => (a -> Bool) -> m a -> m ([a], a)
+untilM' :: (Monad m) => (a -> Bool) -> m a -> m ([a], a)
 untilM' p m = loopUntil p (lift m) ()
 
 persistent :: Lens' Model Persistent
 persistent = lens get' set''
   where
     get' (Level _ p) = p
-    get' (Select p)  = p
+    get' (Select p) = p
     set'' (Level ld _) p = Level ld p
-    set'' (Select _)   p = Select p
+    set'' (Select _) p = Select p
 
 _LevelData :: Traversal' Model LevelData
-_LevelData = _Level._1
+_LevelData = _Level . _1
 
 -- lesser utils
 
