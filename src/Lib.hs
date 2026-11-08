@@ -13,13 +13,13 @@ import Control.Lens
     (%~),
     (&),
     (.~),
-    (^.),
+    (^.), (^?),
   )
-import Control.Monad (forM)
+import Control.Monad (forM, guard, when)
 import Data.Foldable (for_)
 import qualified Data.Map as M
-import Data.Maybe (catMaybes, listToMaybe, fromMaybe)
-import Data_ (playerRad, tiles, tiles', tilesLen)
+import Data.Maybe (catMaybes, listToMaybe, fromMaybe, fromJust)
+import Data_ (playerRad, tiles, tiles', tilesLen, restart)
 import Linear (R1 (_x), R2 (_y), V2 (V2))
 import Raylib.Core.Textures as Texture ( drawTextureV )
 import Raylib.Types.Core (Rectangle (..), Vector2)
@@ -29,17 +29,11 @@ import Raylib.Util.Colors (white, black)
 import Raylib.Util.GUI (guiButton)
 import Raylib.Util.Lenses (_rectangle'x, _rectangle'y)
 import Types
-  ( LevelData (LevelData, _lvlnum, _player),
-    Model (..),
-    Player (..),
-    lvlnum,
-    player,
-    pos,
-  )
-import Utils (rectTo2V, _LevelData)
+import Utils (rectTo2V, _LevelData, liftMaybe, appMaybe)
 import Raylib.Core.Text (drawText, measureText)
+import Data.List ((!?))
 
--- io
+-- draw
 
 -- thanks to https://discord.com/users/1276891525451743295
 drawtiles :: [(Char, Rectangle)] -> M.Map Char Texture -> IO ()
@@ -86,7 +80,7 @@ drawmain (w, h) = do
     rectangle'height = fromIntegral (h `div` 2)
   } (Just "start")
 
--- pure
+-- misc
 
 center :: Vector2 -> Int -> Int -> Camera2D
 center v c d = Camera2D ((/ 2) . fromIntegral <$> V2 c d) v 0 1
@@ -130,13 +124,23 @@ inputted m = m
 -- where f x = ((lvlnum %~ chlvl (x^.player.pos))) x
 
 chlvl :: Vector2 -> Int -> Maybe Int
-chlvl p l =
-  if
-    | not $ any ((== '2') . fst) at_blocks -> Just l
-    | succ l > length tiles' -> Nothing
-    | otherwise -> Just (succ l)
+chlvl p l = if
+  | not $ any ((== '2') . fst) at_blocks -> Just l
+  | succ l > length tiles' -> Nothing
+  | otherwise -> Just (succ l)
   where
     at_blocks = [b | b@(_, x) <- fromMaybe [] (tiles l), fst (rectTo2V x) == rounded p]
+
+tolevel :: Int -> Persistent -> Model
+tolevel l = Level $ restart & lvlnum .~ l & player . pos %~ appMaybe d
+  where
+    c = listToMaybe do
+      ca <- liftMaybe (tiles l)
+      (t, v) <- ca
+      guard (t == '3')
+      return v
+    d = (\c' -> fst (rectTo2V c') + pure (tilesLen / 2)) <$> c
+
 
 rounded :: Vector2 -> Vector2
 rounded p = (fromIntegral :: Int -> Float) . (* tilesLen) . (`div` tilesLen) . floor <$> p

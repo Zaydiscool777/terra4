@@ -5,7 +5,7 @@ module Data_ where
 import Raylib.Types.Core (Rectangle (Rectangle))
 import Data.Functor ((<&>))
 import Data.List ((!?))
-import Types (LevelData(..), Player (..))
+import Types
 
 tiles :: Int -> Maybe [(Char, Rectangle)]
 tiles l = tiles' !? l <&> map \(id', col, row) -> (id', Rectangle (col * k) (row * k) k k)
@@ -16,8 +16,8 @@ tiles' :: [[(Char, Float, Float)]]
 tiles' =
   map
     ( concat
-        . zipWith (\i r -> zipWith (\j x -> (x, j, i)) [0 ..] r) [0 ..]
-        . lines
+      . zipWith (\i r -> zipWith (\j x -> (x, j, i)) [0 ..] r) [0 ..]
+      . lines
     )
     [ "       1      \n\
       \1 11111111111 \n\
@@ -62,7 +62,7 @@ restart :: LevelData
 restart = LevelData
   { _player =
       Player
-        { _pos = pure 200,
+        { _pos = undefined,
           _uvel = pure 0,
           _tvel = pure 0,
           _air = True

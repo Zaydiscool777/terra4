@@ -18,8 +18,9 @@ import Lib
     drawgui,
     drawplayer,
     drawtiles,
-    inputted,
     drawmain,
+    inputted,
+    tolevel,
   )
 import Linear (V2 (V2))
 import Raylib.Core
@@ -32,7 +33,7 @@ import Raylib.Core
     getScreenWidth,
   )
 import Raylib.Types.Core
-  ( KeyboardKey (KeyDown, KeyLeft, KeyQ, KeyR, KeyRight, KeyUp, KeyX),
+  ( KeyboardKey (KeyDown, KeyLeft, KeyQ, KeyRight, KeyUp, KeyX),
   )
 import Raylib.Util.Colors (lightGray, rayWhite, blue)
 import Types
@@ -80,7 +81,6 @@ upd m (AKey KeyUp) =
 upd m (AKey KeyDown) = m & _LevelData . player . uvel %~ (+ V2 0 10)
 upd m (AKey KeyLeft) = m & _LevelData . player . uvel %~ (- V2 10 0)
 upd m (AKey KeyRight) = m & _LevelData . player . uvel %~ (+ V2 10 0)
-upd m (AKey KeyR) = m & _LevelData . player .~ _player restart
 upd m (AKey KeyX) = Main (m ^. persistent)
 upd m AEnd = inputted m
 upd m _ = m
@@ -104,12 +104,12 @@ view' m = do
       clearBackground lightGray
       x <- drawgui (fromIntegral w, fromIntegral h)
       return case x of
-        Just x' -> Level (restart {_lvlnum = x'}) p
+        Just x' -> tolevel x' p
         Nothing -> m
     Main p -> do
       clearBackground blue
       x <- drawmain (w, h)
-      return if x then Level restart p else m
+      return if x then tolevel 0 p else m
   endMode2D
   endDrawing -- presents frame to user
   return m'

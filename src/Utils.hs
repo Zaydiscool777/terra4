@@ -17,7 +17,9 @@ import Raylib.Types.Core
     Rectangle (Rectangle),
     Vector2,
   )
-import Types (LevelData, Model (..), Persistent, _Level)
+import Types
+import Control.Applicative (Alternative (..))
+import Data.Maybe (fromMaybe)
 
 -- untilM :: Monad m => (a -> Bool) -> m a -> m a from: utility-ht
 loopUntil :: (Monad m) => (a -> Bool) -> StateT s m a -> s -> m ([a], a)
@@ -52,6 +54,16 @@ persistent = lens g s
 
 _LevelData :: Traversal' Model LevelData
 _LevelData = _Level . _1
+
+-- from: agda
+liftMaybe :: Alternative f => Maybe a -> f a
+liftMaybe = maybe empty pure
+
+funcMaybe :: Maybe (a -> a) -> a -> a
+funcMaybe = fromMaybe id
+
+appMaybe :: Maybe p -> p -> p
+appMaybe = flip fromMaybe
 
 -- lesser utils
 
