@@ -11,10 +11,11 @@ with the level number as the label.
 each level also has a strat position, so now you can start
 where the portal of the last level was in the next level.
 
-How to run: it's an elf file, so on linux:
-- go to [releases](https://github.com/Zaydiscool777/terra2/releases/tag/release1.0)
-- download executable (https://github.com/Zaydiscool777/terra2/releases/download/release1.0/terra-exe)
-- `chmod +x` the file
-- `./[file]` the file
+How to run: it's an elf executable, so on linux:
+- go to [releases](https://github.com/Zaydiscool777/terra4/releases/tag/release1.1)
+- download file (https://github.com/Zaydiscool777/terra4/releases/download/release1.1/isol.zip)
+- decompress using `unzip`
+- `chmod +x` the executable
+- `./[file]` the executable
 - Esc or close button to close
 note: that is a dash not a dot
